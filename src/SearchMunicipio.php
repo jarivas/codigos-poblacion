@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CodigosPoblacion;
 
+use CodigosPoblacion\Models\Database\Provincia;
 use CodigosPoblacion\Models\Database\Municipio;
 
 class SearchMunicipio
@@ -28,5 +29,14 @@ class SearchMunicipio
         $model->limit($limit);
 
         return $model->query();
+    }
+
+    /**
+     * Returns an array of Provincia
+     * @return Provincia[]|null
+     */
+    public static function getProvincias(): array
+    {
+        return Provincia::get();
     }
 }

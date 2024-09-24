@@ -14,7 +14,34 @@ class SearchMunicipioTest extends TestCase
         $search = new SearchMunicipio();
 
         $result = $search->search('31','mal');
-        
+
         $this->assertIsArray($result);
+
+        $this->assertGreaterThan(1, count($result));
+
+        $data = $result[0]->toArray();
+
+        $this->assertArrayHasKey('id', $data);
+        $this->assertArrayHasKey('codigo', $data);
+        $this->assertArrayHasKey('provincia', $data);
+        $this->assertArrayHasKey('nombre', $data);
+        $this->assertArrayHasKey('fullText', $data);
+    }
+
+    public function test_get_provincias(): void
+    {
+        $search = new SearchMunicipio();
+
+        $result = $search->getProvincias();
+
+        $this->assertIsArray($result);
+
+        $this->assertCount(52, $result);
+
+        $data = $result[0]->toArray();
+
+        $this->assertArrayHasKey('id', $data);
+        $this->assertArrayHasKey('nombre', $data);
+        $this->assertArrayHasKey('fullText', $data);
     }
 }
