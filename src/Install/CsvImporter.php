@@ -7,34 +7,16 @@ namespace CodigosPoblacion\Install;
 use CodigosPoblacion\Helpers\InstallHelper;
 use CodigosPoblacion\Models\Provincia;
 use CodigosPoblacion\Models\Municipio;
+use CodigosPoblacion\Models\Database\Provincia as DbProvincia;
 use CodigosPoblacion\Models\Database\Municipio as DbMunicipio;
 use Exception;
 
 class CsvImporter
 {
-    /**
-     * Reads provincia from the csv file
-     * @return Provincia[]|string
-     */
-    public static function readProvincias(): array|string
-    {
-        /**
-         * @var Provincia[] $data
-         */
-        $data = self::readCsv('provincias.csv', Provincia::class);
-        $result = [];
-
-        foreach ($data as $item) {
-            $result[$item->codigo] = $item;
-        }
-
-        return $result;
-    }
-
     public static function import(): string|int
     {
         $count = 0;
-        $provincias = self::readProvincias();
+        $provincias = self::processProvincias();
 
         if (is_string($provincias)) {
             return $provincias;
@@ -49,15 +31,15 @@ class CsvImporter
         try {
             foreach ($municipios as $municipio) {
                 $codigo = $municipio->codigo;
-                $provincia = $provincias[$codigo]->nombre;
                 $nombre = $municipio->nombre;
+                $provincia = $provincias[$codigo];
 
                 $data = [
                     'codigo' => $codigo . $municipio->codigo_municipio,
                     'codigo_control' => $municipio->codigo_control,
-                    'provincia' => $provincia,
+                    'provincia' => $provincia->id,
                     'nombre' => $nombre,
-                    'nombre_provincia' => self::cleanString("$provincia $nombre")
+                    'fullText' => $provincia->fullText . ' ' . self::cleanString($nombre)
                 ];
 
                 $dbModel = new DbMunicipio($data);
@@ -106,11 +88,11 @@ class CsvImporter
      * @param string $fileName
      * @return string Path to the file
      */
-    public static function validateCsvFileExist(string $fileName): string
+    private static function validateCsvFileExist(string $fileName): string
     {
         $env = InstallHelper::getEnv();
 
-        if (is_string(value: $env)) {
+        if (is_string($env)) {
             throw new Exception($env);
         }
 
@@ -139,12 +121,44 @@ class CsvImporter
 
         return $headers;
     }
+    /**
+     * Reads provincia from the csv file
+     * @return array<int, DbProvincia>|string
+     */
+    private static function processProvincias(): array|string
+    {
+        /**
+         * @var Provincia[] $data
+         */
+        $data = self::readCsv('provincias.csv', Provincia::class);
+        $result = [];
+
+        foreach ($data as $item) {
+            $nombre = $item->nombre;
+
+            $provincia = new DbProvincia([
+                'nombre' => $nombre,
+                'fullText' => self::cleanString($nombre)
+            ]);
+
+            $provincia->save();
+
+            $result[$item->codigo] = $provincia;
+        }
+
+        ksort($result);
+
+        return $result;
+    }
 
     private static function cleanString(string $string): string
     {
         $string = trim($string);
-        $string = strtolower($string);
+        $string = str_replace('/', ' ', $string);
+        $string = str_replace(',', '', $string);
         $string = iconv('UTF-8', 'ASCII//TRANSLIT', $string);
+        $string = iconv('ASCII//TRANSLIT', 'UTF-8', $string);
+        $string = strtolower($string);
 
         return $string;
     }

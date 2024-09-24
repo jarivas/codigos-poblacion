@@ -4,16 +4,16 @@ declare(strict_types=1);
 namespace CodigosPoblacion\Models\Database;
 
 /**
- * @method static bool|Municipio first(array<string, mixed> $columnValues)
- * @method static bool|Municipio[] get(array<string, mixed> $columnValues = [], int $offset = 0, int $limit = 100, array $columns = []): bool|array
+ * @method static bool|Provincia first(array<string, mixed> $columnValues)
+ * @method static bool|Provincia[] get(array<string, mixed> $columnValues = [], int $offset = 0, int $limit = 100, array $columns = []): bool|array
  */
-class Municipio extends Model
+class Provincia extends Model
 {
 
     /**
      * @var string $tName
      */
-    public static string $tName = 'municipio';
+    public static string $tName = 'provincia';
 
     /**
      * @var Dbms $dbms
@@ -25,8 +25,6 @@ class Municipio extends Model
      */
     protected static array $columns = [
         'id',
-        'codigo',
-        'provincia',
         'nombre',
         'fullText',
     ];
@@ -35,16 +33,6 @@ class Municipio extends Model
      * @var ?int $id
      */
     public ?int $id;// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
-
-    /**
-     * @var string $codigo
-     */
-    public string $codigo;// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
-
-    /**
-     * @var int $provincia
-     */
-    public int $provincia;// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
 
     /**
      * @var string $nombre

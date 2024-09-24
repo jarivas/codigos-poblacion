@@ -10,10 +10,11 @@ class SearchMunicipio
 {
     /**
      * It requires $query length would be longer than 3, search on provincias name and municipio name
+     * @param string $provinciaId
      * @param string $query
      * @return Municipio[]|null
      */
-    public static function search(string $query, int $offset = 0, int $limit = 100): ?array
+    public static function search(string $provinciaId, string $query, int $offset = 0, int $limit = 100): ?array
     {
         if (strlen($query) < 3) {
             return null;
@@ -21,7 +22,8 @@ class SearchMunicipio
 
         $model = new Municipio();
 
-        $model->where('nombre_provincia', 'LIKE', "%$query%");
+        $model->where( 'provincia', '=', $provinciaId);
+        $model->where('fullText', 'LIKE', "$query%");
         $model->offset($offset);
         $model->limit($limit);
 

@@ -17,7 +17,7 @@ class Connection {
     /**
      * @var string $dsn
      */
-    private string $dsn = 'sqlite:/home/luis/projects/codigos-poblacion/data//database.sqlite';
+    private string $dsn = 'sqlite:/home/luis/projects/codigos-poblacion-1/data//database.sqlite';
 
     /**
      * @var null|string $sshTunnel

@@ -13,8 +13,8 @@ class SearchMunicipioTest extends TestCase
     {
         $search = new SearchMunicipio();
 
-        $result = $search->search('mal');
-
+        $result = $search->search('31','mal');
+        
         $this->assertIsArray($result);
     }
 }
