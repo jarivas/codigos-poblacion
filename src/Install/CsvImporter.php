@@ -39,7 +39,7 @@ class CsvImporter
                     'codigo_control' => $municipio->codigo_control,
                     'provincia' => $provincia->id,
                     'nombre' => $nombre,
-                    'fullText' => $provincia->fullText . ' ' . self::cleanString($nombre)
+                    'fullText' => self::cleanString($nombre)
                 ];
 
                 $dbModel = new DbMunicipio($data);
@@ -156,6 +156,8 @@ class CsvImporter
         $string = trim($string);
         $string = str_replace('/', ' ', $string);
         $string = str_replace(',', '', $string);
+        $string = str_replace('-', ' ', $string);
+        $string = str_replace("'", ' ', $string);
         $string = iconv('UTF-8', 'ASCII//TRANSLIT', $string);
         $string = iconv('ASCII//TRANSLIT', 'UTF-8', $string);
         $string = strtolower($string);

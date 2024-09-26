@@ -13,11 +13,11 @@ class SearchMunicipioTest extends TestCase
     {
         $search = new SearchMunicipio();
 
-        $result = $search->search('31','mal');
+        $result = $search->search('31','arc');
 
         $this->assertIsArray($result);
 
-        $this->assertGreaterThan(1, count($result));
+        $this->assertSame(2, count($result));
 
         $data = $result[0]->toArray();
 
