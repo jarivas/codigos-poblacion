@@ -1,0 +1,24 @@
+{
+    "count": 8116,
+    "errors": {
+        "count": 4,
+        "errors": [
+            {
+                "municipio": "15026",
+                "error": "codigo postal not found"
+            },
+            {
+                "municipio": "15063",
+                "error": "codigo postal not found"
+            },
+            {
+                "municipio": "36011",
+                "error": "codigo postal not found"
+            },
+            {
+                "municipio": "36012",
+                "error": "codigo postal not found"
+            }
+        ]
+    }
+}

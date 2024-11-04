@@ -1,0 +1,20 @@
+{
+    "name": "jarivas/codigos-poblacion",
+    "type": "library",
+    "require": {
+        "jarivas/sql-models": "^1.7",
+        "jarivas/php-env": "^1.0",
+        "jarivas/php-popo-models": "^1.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "autoload": {
+      "psr-4": {
+        "CodigosPoblacion\\": "src/",
+        "CodigosPoblacion\\Tests\\": "tests/"
+      }
+    },
+    "license": "GPL-3.0-or-later",
+    "version": "1.2.0"
+}
