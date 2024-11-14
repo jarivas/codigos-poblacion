@@ -14,29 +14,46 @@ use Exception;
 
 class CsvImporter
 {
-    public static function import(): array|string
+    /**
+     * @var Provincia[] $provincias
+     */
+    private array $provincias = [];
+
+    /**
+     * @var Municipio[] $municipios
+     */
+    private array $municipios = [];
+
+    /**
+     * @var array<string, array<int, CodigoPostalMunicipio>> $codigoPostalMunicipios
+     */
+    private array $codigoPostalMunicipios = [];
+
+    private array $errors = [];
+
+    public function import(): array|string
     {
-        $provincias = self::processProvincias();
+        $provincias = $this->processProvincias();
 
         if (is_string($provincias)) {
             return $provincias;
         }
 
-        $codigoPostalMunicipios = self::processCodigoPostalMunicipios();
+        $codigoPostalMunicipios = $this->processCodigoPostalMunicipios();
 
         if (is_string($codigoPostalMunicipios)) {
             return $codigoPostalMunicipios;
         }
 
-        return self::processMunicipios($codigoPostalMunicipios);
+        return $this->processMunicipios();
     }
 
-    private static function readCsv(string $fileName, string $modelClass): array|string
+    private function readCsv(string $fileName, string $modelClass): array|string
     {
-        $result = [];
+        $provincias = [];
 
         try {
-            $path = self::validateCsvFileExist($fileName);
+            $path = $this->validateCsvFileExist($fileName);
             $handle = fopen($path, "r");
             $line = [];
 
@@ -44,19 +61,19 @@ class CsvImporter
                 throw new Exception("Fail opening CSV file $fileName");
             }
 
-            $headers = self::getCsvHeaders($handle);
+            $headers = $this->getCsvHeaders($handle);
 
             while ($line = fgetcsv($handle, 1000, ',')) {
                 $data = array_combine($headers, $line);
 
-                $result[] = new $modelClass($data);
+                $provincias[] = new $modelClass($data);
             }
 
         } catch (Exception $e) {
             return $e->getMessage();
         }
 
-        return $result;
+        return $provincias;
     }
 
     /**
@@ -65,7 +82,7 @@ class CsvImporter
      * @param string $fileName
      * @return string Path to the file
      */
-    private static function validateCsvFileExist(string $fileName): string
+    private function validateCsvFileExist(string $fileName): string
     {
         $env = InstallHelper::getEnv();
 
@@ -88,7 +105,7 @@ class CsvImporter
      * @throws \Exception
      * @return array
      */
-    private static function getCsvHeaders(mixed $handle): array
+    private function getCsvHeaders(mixed $handle): array
     {
         $headers = fgetcsv($handle, 1000, ",");
 
@@ -101,149 +118,172 @@ class CsvImporter
 
     /**
      * Reads provincia from the csv file
-     * @return array<int, Provincia>|string
+     * @return ?string
      */
-    private static function processProvincias(): array|string
+    private function processProvincias(): ?string
     {
         /**
          * @var Provincia[] $data
          */
-        $data = self::readCsv('provincias.csv', Provincia::class);
-        $result = [];
+        $data = $this->readCsv('provincias.csv', Provincia::class);
+        $provincias = [];
+        $result = null;
+
+        if (is_string($data)) {
+            return $data;
+        }
 
         foreach ($data as $item) {
+            $codigo = $item->codigo;
             $nombre = $item->nombre;
 
             $provincia = new DbProvincia([
+                'codigo' => $codigo,
                 'nombre' => $nombre,
-                'fullText' => self::cleanString($nombre)
+                'fullText' => $this->cleanString($nombre)
             ]);
 
             $provincia->save();
 
-            $result[$item->codigo] = $item;
+            $provincias[$codigo] = $item;
         }
 
-        ksort($result);
+        ksort($provincias);
+
+        $this->provincias = $provincias;
 
         return $result;
     }
 
     /**
      * Reads codigo postal municipio from the csv file
-     * @return array<int, CodigoPostalMunicipio>||string
+     * @return ?string
      */
-    private static function processCodigoPostalMunicipios(): array|string
+    private function processCodigoPostalMunicipios(): ?string
     {
         /**
          * @var CodigoPostalMunicipio[] $data
          */
-        $data = self::readCsv('codigo_postal_municipio.csv', CodigoPostalMunicipio::class);
+        $data = $this->readCsv('codigo_postal_municipio.csv', CodigoPostalMunicipio::class);
+        $codigoPostalMunicipios = [];
+        $result = null;
 
         if (is_string(value: $data)) {
             return $data;
         }
 
         foreach ($data as $item) {
-            $result[self::getMunicipiosKey($item->codigo_municipio)] = $item;
+            if (empty($codigoPostalMunicipios[$item->codigo_municipio])) {
+                $codigoPostalMunicipios[$item->codigo_municipio] = [];
+            }
+
+            $codigoPostalMunicipios[$item->codigo_municipio][] = $item;
         }
 
-        ksort($result);
+        ksort($codigoPostalMunicipios);
+
+        $this->codigoPostalMunicipios = $codigoPostalMunicipios;
 
         return $result;
     }
 
-    private static function getMunicipiosKey(mixed $codigoMunicipio): string
+    private function processMunicipios(): array|string
     {
-        return "key_$codigoMunicipio";
-    }
-
-    /**
-     * @param CodigoPostalMunicipio[] $codigoPostalMunicipios
-     */
-    private static function processMunicipios(array &$codigoPostalMunicipios): array|string
-    {
-        $municipios = self::readCsv('municipios.csv', Municipio::class);
+        $municipios = $this->readCsv('municipios.csv', Municipio::class);
 
         if (is_string($municipios)) {
             return $municipios;
         }
 
-        return self::saveMunicipios($municipios, $codigoPostalMunicipios);
+        $this->saveMunicipios($municipios);
+
+        return $this->errors;
     }
 
     /**
      * @param Municipio[] $municipios
-     * @param CodigoPostalMunicipio[] $codigoPostalMunicipios
      */
-    private static function saveMunicipios(array &$municipios, array &$codigoPostalMunicipios): array
+    private function saveMunicipios(array &$municipios): void
     {
         $count = 0;
-        $errors = [];
 
         foreach ($municipios as $municipio) {
             try {
-                $codigoMunicipio = self::getCodigoMunicipio($municipio);
-                $codigoPostal = self::getCodigoPostal($codigoPostalMunicipios, $codigoMunicipio, $errors);
-                $nombre = $municipio->nombre;
+                $codigoMunicipio = $municipio->getCodigoMunicipio();
+                $codigoPostales = $this->getCodigoPostales( $codigoMunicipio);
+                
+                foreach($codigoPostales as $codigoPostal) {
+                    $this->saveMunicipio($municipio, $codigoMunicipio, $codigoPostal);
 
-                $data = [
-                    'codigo' => $codigoMunicipio,
-                    'codigo_provincia' => $municipio->codigo_provincia,
-                    'codigo_postal' => $codigoPostal,
-                    'nombre' => $nombre,
-                    'fullText' => self::cleanString($nombre)
-                ];
-
-                $dbModel = new DbMunicipio($data);
-                $dbModel->save();
-
-                ++$count;
+                    ++$count;
+                }
             } catch (Exception $exception) {
-                $errors[] = [
+                $this->errors[] = [
                     'municipio' => $municipio->toArray(),
                     'error' => $exception->getMessage()
                 ];
             }
         }
 
-
-        return [
+        $this->errors = [
             'count' => $count,
             'errors' => [
-                'count' => count($errors),
-                'errors' => $errors
+                'count' => count($this->errors),
+                'errors' => $this->errors
             ]
         ];
     }
 
-    private static function getCodigoMunicipio(Municipio $municipio): string
+    private function saveMunicipio(Municipio $municipio, string $codigoMunicipio, string $codigoPostal)
     {
-        return $municipio->codigo_provincia . $municipio->codigo;
+        $nombre = $municipio->nombre;
+
+        $data = [
+            'codigo' => $codigoMunicipio,
+            'codigo_provincia' => $municipio->codigo_provincia,
+            'codigo_postal' => $codigoPostal,
+            'nombre' => $nombre,
+            'fullText' => $this->cleanString($nombre)
+        ];
+
+        $dbModel = new DbMunicipio($data);
+        $dbModel->save();
+
     }
 
     /**
-     * @param CodigoPostalMunicipio[] $codigoPostalMunicipios
-     * @param string @codigoMunicipio
-     * @param array $errors
+     * @param string $codigoMunicipio
+     * @return string[]
      */
-    private static function getCodigoPostal(array &$codigoPostalMunicipios, string $codigoMunicipio, array &$errors): string
+    private function getCodigoPostales(string $codigoMunicipio): array
     {
-        $codigoPostalMunicipio = $codigoPostalMunicipios[self::getMunicipiosKey($codigoMunicipio)];
+        $codigosPostalesMunicipio = $this->codigoPostalMunicipios[$codigoMunicipio];
+        $result = [];
 
-        if ((empty($codigoPostalMunicipio) || empty($codigoPostalMunicipio->codigo_postal))) {
-            $errors[] = [
+        if (empty($codigosPostalesMunicipio)) {
+            $this->errors[] = [
                 'municipio' => $codigoMunicipio,
                 'error' => 'codigo postal not found'
             ];
 
-            return '';
+            return $result;
         }
 
-        return $codigoPostalMunicipio->codigo_postal;
+        foreach ($codigosPostalesMunicipio as $codigoPostalMunicipio) {
+            if (empty($codigoPostalMunicipio->codigo_postal)) {
+                $this->errors[] = [
+                    'municipio' => $codigoMunicipio,
+                    'error' => 'codigo postal not found'
+                ];
+
+                return $result;
+            }
+        }
+
+        return array_column($codigosPostalesMunicipio, 'codigo_postal');
     }
 
-    private static function cleanString(string $string): string
+    private function cleanString(string $string): string
     {
         $string = trim($string);
         $string = str_replace('/', ' ', $string);

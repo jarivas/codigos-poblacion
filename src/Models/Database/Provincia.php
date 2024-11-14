@@ -25,6 +25,7 @@ class Provincia extends Model
      */
     protected static array $columns = [
         'id',
+        'codigo',
         'nombre',
         'fullText',
     ];
@@ -33,6 +34,11 @@ class Provincia extends Model
      * @var int $id
      */
     public int $id;// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
+
+    /**
+     * @var string $codigo
+     */
+    public string $codigo;// phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps
 
     /**
      * @var string $nombre

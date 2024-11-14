@@ -23,7 +23,7 @@ class SearchMunicipio
 
         $model = new Municipio();
 
-        $model->where( 'provincia', '=', $provinciaId);
+        $model->where('provincia', '=', $provinciaId);
         $model->where('fullText', 'LIKE', "$query%");
         $model->offset($offset);
         $model->limit($limit);

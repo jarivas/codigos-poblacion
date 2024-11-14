@@ -23,7 +23,7 @@ class GenerateModels
 
         $targetFolder = "$rootDir/src/Models/Database";
         $dbInfo = new DbConnectionInfo(Dbms::Sqlite, $dataDir, $env['DB_FILE']);
-        $generation = new GenerationSqlite($dbInfo, $targetFolder, self::NAMESPACE );
+        $generation = new GenerationSqlite($dbInfo, $targetFolder, self::NAMESPACE);
 
         return $generation->process();
     }
